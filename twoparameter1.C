@@ -1,6 +1,7 @@
 #include "genann.h"
 
 #include <algorithm>
+#include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -45,7 +46,7 @@ int main(int argc, char *argv[])
   std::ofstream out_history("history.dat");
   std::ofstream out_weights("weights.dat");
 
-  /* Train on the four labeled data points many times. */
+  /* Train on the data points many times. */
   const unsigned int nsteps = 10000000;
   double output_threshold = 1.0;
   for (unsigned int i = 0; i < nsteps; ++i)
@@ -71,22 +72,20 @@ int main(int argc, char *argv[])
       if (error < output_threshold)
       {
         output_threshold = error * 0.5;
-        std::ostringstream out_name;
-        out_name << "result_" << error << ".dat";
+        std::ostringstream error_str;
+        error_str << error;
 
-        std::ofstream out_result(out_name.str());
+        // save prediction for plotting
+        std::ofstream out_result("result_" + error_str.str() + ".dat");
         for (unsigned int j = 0; j < input.size(); ++j)
           out_result << input[j][0] << ' ' << input[j][1] << ' ' << predict[j] << '\n';
+
+        // save network data
+        FILE *out = std::fopen(("genann_" + error_str.str() + ".dat").c_str(), "w");
+        genann_write(ann, out);
+        std::fclose(out);
       }
     }
-  }
-
-  double error = 0.0;
-  for (unsigned int j = 0; j < input.size(); ++j)
-  {
-    predict[j] = *genann_run(ann, &input[j][0]);
-    double delta = predict[j] - output[j];
-    error += delta * delta;
   }
 
   genann_free(ann);
